@@ -54,4 +54,4 @@ Developed with passion as an advanced OsDEV project under the name **RestableDOS
 - **8282rotcurtsnoC [OSDV]**,  — 20:53
 
 ---
-*© 2026 constructor2828-web. All rights reserved.*
+*© 2026 constructor2828-web. All rights reserved. Kernelist*

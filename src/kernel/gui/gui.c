@@ -92,7 +92,7 @@ static void gui_draw_window_internal(gui_win_t *win) {
     } else if (win->x == 100 && win->y >= 400) { // About Window
         gui_draw_text("Stage2.bin [OSDV],  - 20:53", x + 15, y + 40, 0x00FFFFFF);
         gui_draw_text("8282rotcurtsnoC [OSDV],  - 20:53", x + 15, y + 65, 0x00AAAAAA);
-        gui_draw_text("(c) 2026 constructor2828-web", x + 15, y + 90, 0x00888888);
+        gui_draw_text("(c) 2026 constructor2828-web - Kernelist", x + 15, y + 90, 0x00888888);
     }
 }
 
