@@ -1,5 +1,6 @@
 #include "terminal.h"
 #include "font8x8.h"
+#include "serial.h"
 #include <stdarg.h>
 
 static boot_info_t *boot_info;
@@ -38,7 +39,7 @@ void draw_char(char c, uint32_t x, uint32_t y, uint32_t fg, uint32_t bg) {
     uint8_t *bitmap = font8x8_basic[(uint8_t)c];
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
-            if (bitmap[i] & (1 << j)) {
+            if (bitmap[i] & (0x80 >> j)) {
                 draw_pixel(x + j, y + i, fg);
             } else {
                 draw_pixel(x + j, y + i, bg);
@@ -67,6 +68,7 @@ void terminal_setcolor(vga_color_t fg, vga_color_t bg) {
 }
 
 void terminal_putchar(char c) {
+    serial_putc(c); // Always duplicate to Serial for debugging
     if (c == '\n') {
         cursor_x = 0;
         cursor_y += 12; // 8px font + 4px spacing

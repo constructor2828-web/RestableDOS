@@ -6,10 +6,10 @@ section .text
 _start:
     ; Terminate if not multiboot
     cmp eax, 0x36d76289
-    jne .halt
+    jne halt_loop
 
-    ; Save multiboot info
-    mov edi, ebx
+    ; Save multiboot info in ESI (preserved across stosd/page setup)
+    mov esi, ebx
 
     ; Set up stack
     mov esp, stack_top
@@ -26,10 +26,10 @@ _start:
     lgdt [gdt64.pointer]
     jmp gdt64.code_segment:_start_64
 
-.halt:
+halt_loop:
     cli
     hlt
-    jmp .halt
+    jmp halt_loop
 
 check_cpuid:
     pushfd
@@ -46,7 +46,7 @@ check_cpuid:
     je .no_cpuid
     ret
 .no_cpuid:
-    jmp .halt
+    jmp halt_loop
 
 check_long_mode:
     mov eax, 0x80000000
@@ -60,35 +60,48 @@ check_long_mode:
     jz .no_long_mode
     ret
 .no_long_mode:
-    jmp .halt
+    jmp halt_loop
 
 setup_page_tables:
-    ; 1. Clear page tables memory
+    ; 1. Clear page tables memory (L4, L3, and 4x L2 = 6 pages)
     mov edi, page_table_l4
     xor eax, eax
-    mov ecx, 4096 * 3 / 4 ; L4, L3, L2
+    mov ecx, 4096 * 6 / 4 
     rep stosd
 
-    ; 2. Map PML4 to PDP
+    ; 2. Map PML4 entry 0 to PDP (L3)
     mov eax, page_table_l3
     or eax, 0b11 ; present, writable
     mov [page_table_l4], eax
 
-    ; 3. Map PDP to PD
+    ; 3. Map 4 entries of PDP (L3) to 4 separate PDs (L2)
+    ; Each PD entry in L3 covers 1 GiB. 4 entries = 4 GiB mapping.
     mov eax, page_table_l2
-    or eax, 0b11 ; present, writable
-    mov [page_table_l3], eax
+    or eax, 0b11
+    mov [page_table_l3 + 0], eax
+    
+    mov eax, page_table_l2 + 4096
+    or eax, 0b11
+    mov [page_table_l3 + 8], eax
+    
+    mov eax, page_table_l2 + 8192
+    or eax, 0b11
+    mov [page_table_l3 + 16], eax
+    
+    mov eax, page_table_l2 + 12288
+    or eax, 0b11
+    mov [page_table_l3 + 24], eax
 
-    ; 4. Map PD to 2MiB Huge Pages (Identity map first 1GB)
+    ; 4. Map the PDs (L2) to 2 MiB Huge Pages spanning 0 to 4 GiB
     mov ecx, 0
 .loop:
     mov eax, 0x200000
     mul ecx
-    or eax, 0b10000011 ; present, writable, huge
+    or eax, 0b10000011 ; present, writable, huge (bit 7)
     mov [page_table_l2 + ecx * 8], eax
 
     inc ecx
-    cmp ecx, 512
+    cmp ecx, 2048 ; 2048 * 2 MiB = 4096 MiB (4 GiB)
     jne .loop
     ret
 
@@ -125,10 +138,10 @@ _start_64:
     mov fs, ax
     mov gs, ax
 
-    ; EDI still contains multiboot info pointer
-    mov rdi, rdi ; RDI = Multiboot Info
+    ; RSI still contains multiboot info pointer (saved in ESI earlier)
+    mov rdi, rsi ; RDI = Multiboot Info
     call kernel_main
-
+    
     cli
     hlt
 
@@ -139,7 +152,7 @@ page_table_l4:
 page_table_l3:
     resb 4096
 page_table_l2:
-    resb 4096
+    resb 4096 * 4 ; 4 pages for 4 GiB identity mapping
 stack_bottom:
     resb 4096 * 4
 stack_top:

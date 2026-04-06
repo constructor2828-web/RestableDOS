@@ -6,6 +6,17 @@ header_start:
     ; checksum
     dd 0x100000000 - (0xe85250d6 + 0 + (header_end - header_start))
 
+    align 8
+    ; information request tag
+    dw 1    ; type
+    dw 0    ; flags
+    dd 24   ; size (tag size including header + list of mmaped types)
+    dd 1    ; request command line
+    dd 3    ; request modules
+    dd 6    ; request memory map
+    dd 8    ; request framebuffer
+    align 8
+
     ; framebuffer tag
     dw 5    ; type
     dw 0    ; flags

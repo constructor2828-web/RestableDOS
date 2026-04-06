@@ -8,7 +8,7 @@ ISO     = $(BUILD)/RenamedOS.iso
 
 # C Flags - Native 64-bit ELF
 KERNEL_CFLAGS = -m64 -ffreestanding -fno-pie -nostdlib -fno-builtin \
-                -Isrc/kernel -Isrc/kernel/ROFS -Isrc/kernel/shell \
+                -Isrc/kernel -Isrc/kernel/ROFS -Isrc/kernel/shell -Isrc/kernel/drivers \
                 -mcmodel=large -mno-red-zone
 
 # Linker Flags - ELF64
@@ -62,7 +62,7 @@ prebuild:
 
 run: all
 	@echo "[RUN]  Launching QEMU (UEFI)..."
-	$(QEMU) -bios /usr/share/ovmf/OVMF.fd -cdrom $(ISO) -m 256M -net none
+	$(QEMU) -bios /usr/share/ovmf/OVMF.fd -cdrom $(ISO) -m 256M -net none -serial stdio
 
 flash: all
 	@echo "=========================================================="

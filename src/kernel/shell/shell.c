@@ -144,7 +144,7 @@ static void kernel_panic(const char *msg) {
     terminal_writeln("  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n");
     terminal_printf("  DETECTOR: User-land Exception / Debug Halt\n");
     terminal_printf("  MESSAGE:  %s\n\n", msg);
-    terminal_writeln("  Execution suspended. Please power cycle KernelistOS.");
+    terminal_writeln("  Execution suspended. Please power cycle RestableDOS.");
     __asm__ volatile("cli; hlt");
     while(1);
 }
@@ -170,7 +170,7 @@ static void dispatch(void) {
     if (scmp(line, "date") == 0 || scmp(line, "time") == 0) { cmd_date(); return; }
     if (scmp(line, "reboot") == 0)  { cmd_reboot(); return; }
     if (scmp(line, "whoami") == 0)  { terminal_writeln("  root"); return; }
-    if (scmp(line, "uname") == 0)   { terminal_writeln("  KernelistOS Native x86_64 LTS [Build 2026.04.06]"); return; }
+    if (scmp(line, "uname") == 0)   { terminal_writeln("  RestableDOS Native x86_64 LTS [Build 2026.04.06]"); return; }
     if (scmp(line, "uptime") == 0)  { terminal_writeln("  up 42 seconds, load average: 0.05, 0.02, 0.01"); return; }
     if (scmp(line, "free") == 0)    { terminal_writeln("  Mem: 256MB Total | 1.4MB Used | 254.6MB Free"); return; }
     if (scmp(line, "cpuinfo") == 0) { terminal_writeln("  x86_64 GenuineIntel CPU @ 2.40GHz | Features: SSE3, VMX, LongMode"); return; }
@@ -180,8 +180,8 @@ static void dispatch(void) {
     }
     if (scmp(line, "usb") == 0)   { terminal_writeln("  Scanning Bus... Found 1 Root Hub, 2 Ports Active."); return; }
     if (scmp(line, "pwd") == 0)   { terminal_writeln("  /rofs"); return; }
-    if (scmp(line, "hostname") == 0){ terminal_writeln("  kernelistos"); return; }
-    if (scmp(line, "version") == 0) { terminal_writeln("  KernelistOS v1.0.0-PRO 'Aura'"); return; }
+    if (scmp(line, "hostname") == 0){ terminal_writeln("  restabledos"); return; }
+    if (scmp(line, "version") == 0) { terminal_writeln("  RestableDOS v1.0.0-PRO 'Aura'"); return; }
     if (scmp(line, "history") == 0) { terminal_writeln("  (History logging buffer cleared)"); return; }
     if (scmp(line, "color") == 0)   { terminal_writeln("  Cycling palette... Done."); return; }
     if (scmp(line, "shutdown") == 0){ terminal_writeln("  ACPI Powering off... HALT."); __asm__ volatile("cli; hlt"); return; }
