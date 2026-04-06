@@ -1,0 +1,11 @@
+Sudo password: 1010
+Kernel in dir: src/kernel/
+Bootloadr in dir: src/boot/
+Shell in dir: src/kernel/shell/
+Ramfs in dir: src/kernel/Ramfs/
+malloc in dir: src/kernel/malloc/
+printf in dir: src/kernel/printf/
+Kernel Libary in dir: src/kernel/klib/
+
+kernel use: RamFS
+OS is: x86 (32bit)

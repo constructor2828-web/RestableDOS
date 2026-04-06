@@ -1,0 +1,8 @@
+build/
+*.o
+*.bin
+*.iso
+*.img
+.DS_Store
+.vscode/
+.gemini/
