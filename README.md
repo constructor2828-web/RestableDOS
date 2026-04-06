@@ -50,5 +50,8 @@ make flash
 
 Developed with passion as an advanced OsDEV project under the name **RestableDOS**.
 
+- **Stage2.bin [OSDV]**,  — 20:53
+- **8282rotcurtsnoC [OSDV]**,  — 20:53
+
 ---
 *© 2026 constructor2828-web. All rights reserved.*
