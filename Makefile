@@ -62,7 +62,7 @@ prebuild:
 
 run: all
 	@echo "[RUN]  Launching QEMU (UEFI)..."
-	$(QEMU) -bios /usr/share/ovmf/OVMF.fd -cdrom $(ISO) -m 256M -net none -serial stdio
+	$(QEMU) -bios /usr/share/ovmf/OVMF.fd -cdrom $(ISO) -m 1G -net none -serial stdio
 
 flash: all
 	@echo "=========================================================="
