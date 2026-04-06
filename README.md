@@ -1,51 +1,54 @@
 # RestableDOS v1.0 🚀
 
-**RestableDOS** es un sistema operativo nativo x86_64, minimalista y orientado a la eficiencia, diseñado para hardware moderno cumpliendo con los estándares UEFI y Multiboot2.
+**RestableDOS** is a native x86_64 operating system, minimalist and efficiency-oriented, designed for modern hardware by complying with UEFI and Multiboot2 standards.
 
-## Características Principales 🌟
+## Key Features 🌟
 
-- **Arquitectura de 64 bits**: Kernel escrito en C nativo con una transición estable a Modo Largo.
-- **Interfaz Aura**: Entorno gráfico minimalista con fondo procedimental y ventanas de sistema.
-- **Bootloader Nativo**: Utiliza **GRUB/Multiboot2** eliminando la necesidad de CSM (Legacy Boot).
-- **Subprocesos y Hardware**:
-    - Escaneo activo de dispositivos PCI.
-    - Soporte básico de USB xHCI/EHCI.
-    - Manejo nativo de Framebuffer de alta resolución.
-- **Root Filesystem (ROFS)**: Sistema de archivos de solo lectura montado como módulo.
+- **64-bit Architecture**: Native C kernel with a stable transition to Long Mode.
+- **Interactive Aura Interface**: Minimalist graphical environment with procedural background, mouse support, and draggable system windows.
+- **High Performance**: Implementing **Double Buffering** and fast 64-bit memory copies for a flicker-free experience.
+- **Native Bootloader**: Uses **GRUB/Multiboot2**, eliminating the need for CSM (Legacy Boot).
+- **Hardware Support**:
+    - Active PCI device scanning.
+    - Basic USB xHCI/EHCI support.
+    - Native high-resolution Framebuffer handling.
+    - PS/2 Mouse driver with real-time cursor interaction.
+- **Root Filesystem (ROFS)**: Read-only filesystem mounted as a module.
 
-## Estructura del Proyecto 📁
+## Project Structure 📁
 
-- `src/boot/`: Cargador Multiboot2 y configuración de GRUB.
-- `src/kernel/`: Núcleo del sistema, gestión de memoria y controladores.
-- `src/kernel/gui/`: Interfaz gráfica Aura.
-- `src/kernel/shell/`: Terminal de comandos interactivo (20+ comandos).
-- `tools/`: Utilidades para generar la imagen de disco ROFS.
-- `Makefile`: Sistema de construcción automatizado.
+- `src/boot/`: Multiboot2 loader and GRUB configuration.
+- `src/kernel/`: System core, memory management, and drivers.
+- `src/kernel/drivers/`: Hardware drivers (Serial, Mouse, PCI).
+- `src/kernel/gui/`: Aura graphical interface and window manager.
+- `src/kernel/shell/`: Interactive command terminal.
+- `tools/`: Utilities for generating the ROFS disk image.
+- `Makefile`: Automated build system.
 
-## Compilación y Ejecución 🛠️
+## Build and Execution 🛠️
 
-### Requisitos
-- `nasm`: Ensamblador x86.
-- `gcc`: Compilador para ELF64.
-- `grub-mkrescue`: Generador de imágenes ISO.
-- `xorriso`: Requerido por GRUB para CD-ROM.
-- `ovmf`: Bios UEFI para QEMU.
+### Prerequisites
+- `nasm`: x86 assembler.
+- `gcc`: Compiler for ELF64.
+- `grub-mkrescue`: ISO image generator.
+- `xorriso`: Required by GRUB for CD-ROM images.
+- `ovmf`: UEFI BIOS for QEMU.
 
-### Comandos
+### Commands
 ```bash
-# Construir el sistema completo (ISO)
+# Build the complete system (ISO)
 make all
 
-# Probar en QEMU (Modo UEFI CDI)
+# Test in QEMU (UEFI Mode) - Runs with 1GB RAM and Double Buffering
 make run
 
-# Flashear a disco real (/dev/sda)
+# Flash to real disk (/dev/sda)
 make flash
 ```
 
-## Créditos ✒️
+## Credits ✒️
 
-Desarrollado con pasión como proyecto de OsDEV avanzado bajo el nombre de **RestableDOS**.
+Developed with passion as an advanced OsDEV project under the name **RestableDOS**.
 
 ---
-*© 2026 constructor2828-web. Todos los derechos reservados.*
+*© 2026 constructor2828-web. All rights reserved.*
