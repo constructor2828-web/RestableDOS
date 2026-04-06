@@ -6,6 +6,9 @@ static boot_info_t *fb_info;
 static int old_mouse_x = 0;
 static int old_mouse_y = 0;
 
+// Double Buffering: 1024x768 is ~3MB. Static allocation for speed.
+static uint32_t backbuffer[1024 * 768]; 
+
 typedef struct {
     char title[32];
     int x, y, w, h;
@@ -20,8 +23,19 @@ static gui_win_t windows[3] = {
 
 static void gui_draw_pixel(int x, int y, uint32_t color) {
     if (x < 0 || x >= fb_info->screen_width || y < 0 || y >= fb_info->screen_height) return;
-    uint32_t *fb = (uint32_t *)fb_info->framebuffer_base;
-    fb[y * fb_info->pixels_per_scanline + x] = color;
+    // Write to BACKBUFFER
+    backbuffer[y * fb_info->screen_width + x] = color;
+}
+
+static void gui_flip(void) {
+    uint32_t *dest = (uint32_t *)fb_info->framebuffer_base;
+    uint32_t size = fb_info->screen_width * fb_info->screen_height;
+    // Fast 64-bit copy from backbuffer to video memory
+    uint64_t *src64 = (uint64_t *)backbuffer;
+    uint64_t *dst64 = (uint64_t *)dest;
+    for (uint32_t i = 0; i < size / 2; i++) {
+        dst64[i] = src64[i];
+    }
 }
 
 void gui_draw_rect(int x, int y, int w, int h, uint32_t color) {
@@ -55,8 +69,25 @@ static void gui_draw_window_internal(gui_win_t *win) {
     gui_draw_rect(x + 2, y + 25, w - 4, h - 27, 0x001A1A1A); 
     gui_draw_rect(x + 2, y + 2, w - 4, 22, 0x002A2A2A); 
     gui_draw_text(win->title, x + 10, y + 9, 0x00E0E0E0);
-    gui_draw_rect(x + w - 22, y + 6, 14, 14, 0x00441111); // Close button
+    gui_draw_rect(x + w - 22, y + 6, 14, 14, 0x00441111); // Close
     gui_draw_text("x", x + w - 18, y + 9, 0x00FFFFFF);
+
+    // App Content (something inside)
+    if (win->x == 40) { // Terminal
+        gui_draw_text("RestableDOS (x86_64) - TTY0", x + 15, y + 40, 0x0000FF00);
+        gui_draw_text("root@restabledos:~$ help", x + 15, y + 60, 0x00BBBBBB);
+        gui_draw_text("ls  cat  write  pci  gfx", x + 15, y + 80, 0x00888888);
+        gui_draw_text("_", x + 15, y + 100, 0x00FFFFFF);
+    } else if (win->x == 550 && win->y < 200) { // System Monitor
+        static uint32_t tick = 0; tick++;
+        uint32_t cpu = 2 + (tick % 5);
+        gui_draw_text("CPU Usage:  Active", x + 15, y + 40, 0x0000AAFF);
+        gui_draw_rect(x + 15, y + 55, 180, 6, 0x00222222);
+        gui_draw_rect(x + 15, y + 55, 10 + (tick % 150), 6, 0x0000AAFF);
+        gui_draw_text("MEM Usage: 1.4 MB", x + 15, y + 75, 0x0000FF00);
+        gui_draw_rect(x + 15, y + 90, 180, 6, 0x00222222);
+        gui_draw_rect(x + 15, y + 90, 40, 6, 0x0000FF00);
+    }
 }
 
 static void gui_draw_background(void) {
@@ -71,18 +102,18 @@ static void gui_draw_background(void) {
     gui_draw_rect(0, fb_info->screen_height - 35, fb_info->screen_width, 35, 0x00111111);
     gui_draw_rect(4, fb_info->screen_height - 31, 100, 26, 0x00222222);
     gui_draw_text("Restable", 15, fb_info->screen_height - 23, 0x0000AAFF);
+    gui_draw_text("18:50:22", fb_info->screen_width - 80, fb_info->screen_height - 23, 0x00FFFFFF);
 }
 
 void gui_init(boot_info_t *binfo) {
     fb_info = binfo;
 }
 
-static void draw_cursor(int x, int y, int erase) {
-    uint32_t color = erase ? 0x00000000 : 0x00FFFFFF; // This is naive, should restore BG
+static void draw_cursor(int x, int y) {
     // Simple 5x5 cursor
-    for(int i=0; i<5; i++) {
-        for(int j=0; j<i+1; j++) {
-            gui_draw_pixel(x + j, y + i, color);
+    for(int i=0; i<8; i++) {
+        for(int j=0; j<i; j++) {
+            gui_draw_pixel(x + j, y + i, 0x00FFFFFF);
         }
     }
 }
@@ -94,7 +125,6 @@ void gui_update(int mx, int my, int mb) {
 
     // 1. Interaction Logic
     for (int i = 0; i < 3; i++) {
-        // Dragging check (Title bar area)
         if (mb == 1 && !last_mb) {
             if (mx > windows[i].x && mx < windows[i].x + windows[i].w &&
                 my > windows[i].y && my < windows[i].y + 25) {
@@ -109,13 +139,14 @@ void gui_update(int mx, int my, int mb) {
         }
     }
 
-    // 2. Simple Redraw (Full redraw is slow, but keeps it simple for now)
-    // To minimize flicker, only redraw if mouse moved or dragging
-    if (dx != 0 || dy != 0 || mb != last_mb) {
-        gui_draw_background();
-        for (int i = 0; i < 3; i++) gui_draw_window_internal(&windows[i]);
-        draw_cursor(mx, my, 0);
-    }
+    // 2. High Performance Redraw (Double Buffered)
+    // Always redraw everything in the backbuffer to support dynamic apps
+    gui_draw_background();
+    for (int i = 0; i < 3; i++) gui_draw_window_internal(&windows[i]);
+    draw_cursor(mx, my);
+    
+    // 3. FLIP
+    gui_flip();
 
     old_mouse_x = mx;
     old_mouse_y = my;
@@ -125,5 +156,6 @@ void gui_update(int mx, int my, int mb) {
 void gui_run(void) {
     gui_draw_background();
     for (int i = 0; i < 3; i++) gui_draw_window_internal(&windows[i]);
-    draw_cursor(0, 0, 0);
+    draw_cursor(0, 0);
+    gui_flip();
 }
