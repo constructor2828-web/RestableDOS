@@ -10,6 +10,6 @@ typedef struct {
 } mouse_state_t;
 
 void mouse_init(void);
-void mouse_read(mouse_state_t *state, int screen_w, int screen_h);
+int mouse_read(mouse_state_t *state, int screen_w, int screen_h);
 
 #endif

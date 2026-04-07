@@ -71,17 +71,25 @@ void mouse_init(void) {
 
 static int mouse_x = 0;
 static int mouse_y = 0;
+static uint8_t mouse_buffer[3];
+static int mouse_index = 0;
 
-void mouse_read(mouse_state_t *state, int screen_w, int screen_h) {
-    // Check if data is available
-    if ((inb(MOUSE_STATUS) & 1) && (inb(MOUSE_STATUS) & 0x20)) {
-        uint8_t status = inb(MOUSE_PORT);
-        int8_t d_x = (int8_t)inb(MOUSE_PORT);
-        int8_t d_y = (int8_t)inb(MOUSE_PORT);
+int mouse_read(mouse_state_t *state, int screen_w, int screen_h) {
+    // Collect bytes until we have a full 3-byte packet (only if it's mouse data)
+    while ((inb(MOUSE_STATUS) & 1) && (inb(MOUSE_STATUS) & 0x20)) {
+        uint8_t b = inb(MOUSE_PORT);
+        mouse_buffer[mouse_index++] = b;
 
-        if (!(status & 0x80) && !(status & 0x40)) { // Valid packet
-            mouse_x += d_x;
-            mouse_y -= d_y; // PS/2 Y is inverted compared to screen coords
+        if (mouse_index == 3) {
+            mouse_index = 0;
+            uint8_t status = mouse_buffer[0];
+            int8_t d_x = (int8_t)mouse_buffer[1];
+            int8_t d_y = (int8_t)mouse_buffer[2];
+
+            // Sensitivity Multiplier (3x)
+            int sensitivity = 3;
+            mouse_x += (int)d_x * sensitivity;
+            mouse_y -= (int)d_y * sensitivity;
 
             if (mouse_x < 0) mouse_x = 0;
             if (mouse_y < 0) mouse_y = 0;
@@ -89,8 +97,13 @@ void mouse_read(mouse_state_t *state, int screen_w, int screen_h) {
             if (mouse_y >= screen_h) mouse_y = screen_h - 1;
 
             state->buttons = status & 0x07;
+            state->x = mouse_x;
+            state->y = mouse_y;
+            return 1; // New data processed
         }
     }
+    
     state->x = mouse_x;
     state->y = mouse_y;
+    return 0; // No full packet yet
 }

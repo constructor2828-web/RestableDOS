@@ -1,4 +1,4 @@
-Sudo password: 1010
+Sudo password: 101010
 Kernel in dir: src/kernel/
 Bootloadr in dir: src/boot/
 Shell in dir: src/kernel/shell/
