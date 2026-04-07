@@ -1,5 +1,4 @@
 #include "gui.h"
-#include "drivers/net.h"
 #include "shell/font8x8.h"
 #include <stddef.h>
 
@@ -12,22 +11,25 @@ static uint32_t backbuffer[1024 * 768];
 // Background Cache: Store the pre-rendered gradient
 static uint32_t bg_buffer[1024 * 768];
 
-static gui_win_t windows[4] = {
-    {"Terminal (Cloud Ready)", 40, 60, 480, 320, 0, 1},
-    {"System Monitor", 550, 40, 280, 220, 0, 1},
-    {"Clock Settings", 550, 280, 200, 100, 0, 1},
-    {"About RestableDOS", 100, 400, 350, 120, 0, 1}
-};
+typedef struct {
+    char title[32];
+    int x, y, w, h;
+    int is_dragging;
+} gui_win_t;
 
-static char gui_term_buf[64] = {0};
-static int  gui_term_pos = 0;
-static char gui_term_output[128] = "Type 'search <topic>' to browse the web.";
+static gui_win_t windows[4] = {
+    {"Terminal", 40, 60, 480, 320, 0},
+    {"System Monitor", 550, 40, 280, 220, 0},
+    {"Clock Settings", 550, 280, 200, 100, 0},
+    {"About RestableDOS", 100, 400, 350, 120, 0}
+};
 
 static void gui_draw_pixel(int x, int y, uint32_t color) {
     if (x < 0 || x >= fb_info->screen_width || y < 0 || y >= fb_info->screen_height) return;
     backbuffer[y * fb_info->screen_width + x] = color;
 }
 
+// Optimized 64-bit memory copy
 static void fast_memcpy64(void *dst, const void *src, uint32_t n_pixels) {
     uint64_t *d64 = (uint64_t *)dst;
     const uint64_t *s64 = (const uint64_t *)src;
@@ -65,49 +67,7 @@ void gui_draw_text(const char *text, int x, int y, uint32_t color) {
     }
 }
 
-static void gui_handle_cmd(void) {
-    if (gui_term_pos == 0) return;
-    gui_term_buf[gui_term_pos] = 0;
-    
-    // Mini-Dispatcher with SEARCH
-    if (gui_term_buf[0] == 's' && gui_term_buf[1] == 'e' && gui_term_buf[2] == 'a') {
-        // Mock Search Result
-        for(int i=0; i<127; i++) gui_term_output[i]=0;
-        char *msg = "Cloud: Searching for query in RestableCloud DNS...";
-        for(int i=0; msg[i]; i++) gui_term_output[i]=msg[i];
-    } else if (gui_term_buf[0] == 'h') {
-        for(int i=0; i<127; i++) gui_term_output[i]=0;
-        char *msg = "Try: search, ls, help, clear, version";
-        for(int i=0; msg[i]; i++) gui_term_output[i]=msg[i];
-    } else if (gui_term_buf[0] == 'c') {
-        for(int i=0; i<127; i++) gui_term_output[i]=0;
-    } else {
-        for(int i=0; i<127; i++) gui_term_output[i]=0;
-        char *msg = "RestableDOS: Bad command. Try 'search'";
-        for(int i=0; msg[i]; i++) gui_term_output[i]=msg[i];
-    }
-    
-    gui_term_pos = 0;
-    gui_term_buf[0] = 0;
-}
-
-void gui_handle_char(char c) {
-    if (!windows[0].is_visible) return;
-    if (c == '\n') {
-        gui_handle_cmd();
-    } else if (c == '\b') {
-        if (gui_term_pos > 0) {
-            gui_term_pos--;
-            gui_term_buf[gui_term_pos] = 0;
-        }
-    } else if (gui_term_pos < 60 && c >= 32 && c <= 126) {
-        gui_term_buf[gui_term_pos++] = c;
-        gui_term_buf[gui_term_pos] = 0;
-    }
-}
-
 static void gui_draw_window_internal(gui_win_t *win) {
-    if (!win->is_visible) return;
     int x = win->x; int y = win->y; int w = win->w; int h = win->h;
     gui_draw_rect(x + 4, y + 4, w, h, 0x000A0A0A); 
     gui_draw_rect(x, y, w, h, 0x002D2D2D); 
@@ -118,24 +78,25 @@ static void gui_draw_window_internal(gui_win_t *win) {
     gui_draw_rect(x + w - 22, y + 6, 14, 14, 0x00441111); // Close
     gui_draw_text("x", x + w - 18, y + 9, 0x00FFFFFF);
 
-    if (x == 40 || win->h == 320) { // Terminal
-        gui_draw_text("RestableCloud CLI v1.0", x + 15, y + 40, 0x0000FF00);
-        gui_draw_text(gui_term_output, x + 15, y + 70, 0x00888888);
-        gui_draw_text("root@restabledos:/ $ ", x + 15, y + 100, 0x0000AAFF);
-        gui_draw_text(gui_term_buf, x + 180, y + 100, 0x00FFFFFF);
-        gui_draw_text("_", x + 180 + (gui_term_pos * 8), y + 100, 0x00FFFFFF);
-    } else if (win->w == 280) { // Monitor
+    if (win->x == 40) { // Terminal
+        gui_draw_text("RestableDOS (x86_64) - TTY0", x + 15, y + 40, 0x0000FF00);
+        gui_draw_text("root@restabledos:~$ help", x + 15, y + 60, 0x00BBBBBB);
+        gui_draw_text("ls  cat  write  pci  gfx", x + 15, y + 80, 0x00888888);
+        gui_draw_text("_", x + 15, y + 100, 0x00FFFFFF);
+    } else if (win->x == 550 && win->y < 200) { // Monitor
         static uint32_t tick = 0; tick++;
-        gui_draw_text("CPU: 3%  NET: Active", x + 15, y + 40, 0x0000AAFF);
+        gui_draw_text("CPU Usage:  Active", x + 15, y + 40, 0x0000AAFF);
         gui_draw_rect(x + 15, y + 55, 180, 6, 0x00222222);
         gui_draw_rect(x + 15, y + 55, 10 + (tick % 150), 6, 0x0000AAFF);
-    } else if (x == 100) { // About
-        gui_draw_text("Project RestableDOS [LTS]", x + 15, y + 40, 0x00FFFFFF);
-        gui_draw_text("By: constructor2828 & Kernelist", x + 15, y + 65, 0x00AAAAAA);
-        gui_draw_text("(c) 2026 - All rights Reserved", x + 15, y + 90, 0x00888888);
+        gui_draw_text("MEM Usage: 1.4 MB", x + 15, y + 75, 0x0000FF00);
+    } else if (win->x == 100 && win->y >= 400) { // About Window
+        gui_draw_text("Stage2.bin [OSDV],  - 20:53", x + 15, y + 40, 0x00FFFFFF);
+        gui_draw_text("8282rotcurtsnoC [OSDV],  - 20:53", x + 15, y + 65, 0x00AAAAAA);
+        gui_draw_text("(c) 2026 constructor2828-web & Kernelist", x + 15, y + 90, 0x00888888);
     }
 }
 
+// Pre-render the background into bg_buffer once
 static void gui_cache_background(void) {
     for (uint32_t y = 0; y < fb_info->screen_height; y++) {
         uint8_t r = 0, g = 5, b = (uint8_t)(10 + (y * 40 / fb_info->screen_height));
@@ -152,7 +113,7 @@ void gui_init(boot_info_t *binfo) {
 }
 
 static void draw_cursor(int x, int y) {
-    for(int i=0; i<10; i++) {
+    for(int i=0; i<8; i++) {
         for(int j=0; j<i; j++) {
             gui_draw_pixel(x + j, y + i, 0x00FFFFFF);
         }
@@ -165,17 +126,6 @@ void gui_update(int mx, int my, int mb) {
     int dy = my - old_mouse_y;
 
     for (int i = 0; i < 4; i++) {
-        if (!windows[i].is_visible) continue;
-
-        if (mb == 1 && !last_mb) {
-            int close_x = windows[i].x + windows[i].w - 22;
-            int close_y = windows[i].y + 6;
-            if (mx >= close_x && mx <= close_x + 14 && my >= close_y && my <= close_y + 14) {
-                windows[i].is_visible = 0;
-                continue;
-            }
-        }
-
         if (mb == 1 && !last_mb) {
             if (mx > windows[i].x && mx < windows[i].x + windows[i].w &&
                 my > windows[i].y && my < windows[i].y + 25) {
@@ -186,22 +136,26 @@ void gui_update(int mx, int my, int mb) {
         if (windows[i].is_dragging) { windows[i].x += dx; windows[i].y += dy; }
     }
 
+    // 1. Fast Background Copy (Replacing the slow pixel-by-pixel loop)
     fast_memcpy64(backbuffer, bg_buffer, fb_info->screen_width * fb_info->screen_height);
+
+    // 2. Specialized Redraws
+    // Taskbar (Static for now, but needs to be in backbuffer)
     gui_draw_rect(0, fb_info->screen_height - 35, fb_info->screen_width, 35, 0x00111111);
     gui_draw_text("Restable", 15, fb_info->screen_height - 23, 0x0000AAFF);
-    
-    // NET Status
-    if (net_get_status()) {
-        gui_draw_text("Connected", fb_info->screen_width - 95, fb_info->screen_height - 23, 0x0000FF00);
-    } else {
-        gui_draw_text("Offline", fb_info->screen_width - 80, fb_info->screen_height - 23, 0x00FF0000);
-    }
+    gui_draw_text("18:52:10", fb_info->screen_width - 80, fb_info->screen_height - 23, 0x00FFFFFF);
 
     for (int i = 0; i < 4; i++) gui_draw_window_internal(&windows[i]);
     draw_cursor(mx, my);
+    
+    // 3. FLIP
     gui_flip();
 
-    old_mouse_x = mx; old_mouse_y = my; last_mb = mb;
+    old_mouse_x = mx;
+    old_mouse_y = my;
+    last_mb = mb;
 }
 
-void gui_run(void) { gui_update(0, 0, 0); }
+void gui_run(void) {
+    gui_update(0, 0, 0);
+}

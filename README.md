@@ -2,6 +2,8 @@
 
 **RestableDOS** is a native x86_64 operating system, minimalist and efficiency-oriented, designed for modern hardware by complying with UEFI and Multiboot2 standards.
 
+**Dev Notes** don't run on UEFI this is not working but i fixed BIOS Booting for Grub so plase run with make run-bios about that we are using Font that is under Treadmark for this OS So please don't use it on ur projects withut Credits this font was created by me (Kernelist) its form FalixOS but its my unpublic OS so plase don't say that we stoled.
+
 ## Key Features 🌟
 
 - **64-bit Architecture**: Native C kernel with a stable transition to Long Mode.

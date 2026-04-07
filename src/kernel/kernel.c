@@ -6,8 +6,7 @@
 #include "multiboot2.h"
 #include "gui/gui.h"
 #include "drivers/mouse.h"
-#include "drivers/keyboard.h"
-#include "drivers/net.h"
+#include "serial.h"
 
 static void print_banner(void);
 
@@ -69,8 +68,6 @@ void kernel_main(uint64_t multiboot_addr) {
     usb_init();
     shell_init();
     mouse_init();
-    keyboard_init();
-    net_init();
 
     /* Print MOTD */
     terminal_writeln("");
@@ -89,23 +86,9 @@ void kernel_main(uint64_t multiboot_addr) {
     gui_run();
 
     mouse_state_t ms;
-    uint32_t loop_counter = 0;
     while(1) {
-        int moved = mouse_read(&ms, binfo.screen_width, binfo.screen_height);
-        
-        char k = keyboard_get_char();
-        if (k != 0) {
-            gui_handle_char(k);
-            moved = 1; 
-        }
-
-        loop_counter++;
-
-        // Update GUI only if mouse moved or enough time passed for animations (~100ms)
-        if (moved || loop_counter > 1000000) {
-            gui_update(ms.x, ms.y, ms.buttons);
-            loop_counter = 0;
-        }
+        mouse_read(&ms, binfo.screen_width, binfo.screen_height);
+        gui_update(ms.x, ms.y, ms.buttons);
     }
 
     /* Should never reach here */

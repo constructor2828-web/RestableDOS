@@ -29,6 +29,7 @@ $(ISO): $(BUILD)/kernel.bin $(BUILD)/rofs.bin src/boot/grub.cfg
 	@cp $(BUILD)/kernel.bin $(BUILD)/isodir/boot/kernel.bin
 	@cp $(BUILD)/rofs.bin $(BUILD)/isodir/boot/rofs.bin
 	@cp src/boot/grub.cfg $(BUILD)/isodir/boot/grub/grub.cfg
+	@cp src/boot/osfont.pf2 $(BUILD)/isodir/boot/grub/osfont.pf2
 	@grub-mkrescue -o $(ISO) $(BUILD)/isodir
 	@echo "[ISO]  Done -> $(ISO)"
 
@@ -62,7 +63,11 @@ prebuild:
 
 run: all
 	@echo "[RUN]  Launching QEMU (UEFI)..."
-	$(QEMU) -bios /usr/share/ovmf/OVMF.fd -cdrom $(ISO) -m 1G -net none -serial stdio
+	@$(QEMU) -bios /usr/share/ovmf/OVMF.fd -cdrom $(ISO) -m 1G -net none -serial stdio
+
+run-bios: all
+	@echo "[RUN]  Launching QEMU (BIOS | Debug)..."
+	@qemu-system-x86_64 -cdrom ./build/RenamedOS.iso -m 1G -net none -serial stdio -vga std -no-shutdown -no-reboot
 
 flash: all
 	@echo "=========================================================="
@@ -76,4 +81,4 @@ flash: all
 	@echo "Flash complete. You can now reboot the machine."
 
 clean:
-	rm -rf $(BUILD)
+	@rm -rf $(BUILD)
