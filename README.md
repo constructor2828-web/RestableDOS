@@ -1,5 +1,7 @@
 # RestableDOS v1.0 🚀
 
+**AI Used Gemini**
+
 **RestableDOS** is a native x86_64 operating system, minimalist and efficiency-oriented, designed for modern hardware by complying with UEFI and Multiboot2 standards.
 
 **Dev Notes** don't run on UEFI this is not working but i fixed BIOS Booting for Grub so plase run with make run-bios about that we are using Font that is under Treadmark for this OS So please don't use it on ur projects withut Credits this font was created by me (Kernelist) its form FalixOS but its my unpublic OS so plase don't say that we stoled.
@@ -46,11 +48,14 @@ make run
 
 # Flash to real disk (/dev/sda)
 make flash
+
+# Test in QEMU (BIOS | Debug Mode) - Runs with 1GB RAM
+make run-bios
 ```
 
 ## Credits ✒️
 
-Developed with passion as an advanced OsDEV project under the name **RestableDOS**.
+Developed with passion as an advanced OSDev project under the name **RestableDOS**.
 
 
 ---
