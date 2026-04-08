@@ -1,6 +1,5 @@
 # RestableDOS v1.0 🚀
 
-**AI Used Gemini**
 
 **RestableDOS** is a native x86_64 operating system, minimalist and efficiency-oriented, designed for modern hardware by complying with UEFI and Multiboot2 standards.
 
